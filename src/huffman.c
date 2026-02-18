@@ -80,7 +80,7 @@ float display_huffman_stats(node* sym_nodes, int sym_count) {
     float huffman_avg_len = 0;
     printf("Symbol | Probability | Huffman Code | Length\n");
     for (int i = 0; i < sym_count; i++) {
-        printf("%c      | %f    | %s    | %d\n", sym_nodes[i].symbol, sym_nodes[i].prob,
+        printf("%c      | %f    | %-9s    | %d\n", sym_nodes[i].symbol, sym_nodes[i].prob,
                sym_nodes[i].code, sym_nodes[i].code_len);
         huffman_avg_len += sym_nodes[i].prob * sym_nodes[i].code_len;
     }

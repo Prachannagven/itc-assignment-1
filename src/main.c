@@ -14,6 +14,9 @@
  * calculation of huffman
  * * v0.3 - Takes a string as an input directly, and does string parsing to set up the nodes.
  * * v1.0 - Implements shanon and shanon fano type code
+ * * v1.1 - Generates the bitstream of the different types of code and fixed up the additional code
+ * files. Also had to fix the makefile.
+ * * v1.2 - Minor fixes with regards to printing of encoded values.
  */
 #include "fano.h"
 #include "global_req.h"
@@ -119,6 +122,10 @@ int main(int argc, char* argv[]) {
     float st_avg_len = display_shannon_type_stats(sym_nodes, sym_num);
     printf("Average Length = %f | Efficiency = %.2f%%\n", st_avg_len,
            (entropy / st_avg_len) * 100.0f);
+    char st_bitstream[str_len * 100];
+    gen_shannon_type_bitstream(st_bitstream, input_str, str_len, sym_num, sym_nodes);
+    printf("Shannon-Type bitstream:\n%s", st_bitstream);
+    decode_shannon_type_bitstream(st_bitstream, sym_num, sym_nodes);
 
     /* Shanon Coding */
     printf("\n=== Shannon Code ===\n");
@@ -126,6 +133,10 @@ int main(int argc, char* argv[]) {
     float sh_avg_len = display_shannon_stats(sym_nodes, sym_num);
     printf("Average Length = %f | Efficiency = %.2f%%\n", sh_avg_len,
            (entropy / sh_avg_len) * 100.0f);
+    char sh_bitstream[str_len * 100];
+    gen_shannon_bitstream(sh_bitstream, input_str, str_len, sym_num, sym_nodes);
+    printf("Shannon bitstream:\n%s", sh_bitstream);
+    decode_shannon_bitstream(sh_bitstream, sym_num, sym_nodes);
 
     /* Shanon-Fano Coding */
     printf("\n=== Shannon-Fano Code ===\n");
@@ -133,6 +144,10 @@ int main(int argc, char* argv[]) {
     float fano_avg_len = display_fano_stats(sym_nodes, sym_num);
     printf("Average Length = %f | Efficiency = %.2f%%\n", fano_avg_len,
            (entropy / fano_avg_len) * 100.0f);
+    char fano_bitstream[str_len * 100];
+    gen_fano_bitstream(fano_bitstream, input_str, str_len, sym_num, sym_nodes);
+    printf("Fano bitstream:\n%s", fano_bitstream);
+    decode_fano_bitstream(fano_bitstream, sym_num, sym_nodes);
 
     /* --- Comparison Table --- */
     printf("\n=== Comparison Summary ===\n");
