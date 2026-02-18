@@ -1,4 +1,5 @@
 #include "global_req.h"
+#include <math.h>
 #include <stdlib.h>
 
 void free_tree(node* root) {
@@ -11,4 +12,12 @@ void free_tree(node* root) {
     // Only free nodes that were dynamically allocated
     if (root->id == -1)
         free(root);
+}
+
+float calculate_entropy(node* sym_nodes, int sym_count) {
+    float entropy = 0;
+    for (int i = 0; i < sym_count; i++) {
+        entropy += sym_nodes[i].prob * log2((double)sym_nodes[i].prob);
+    }
+    return -entropy;
 }

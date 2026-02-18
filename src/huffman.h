@@ -9,5 +9,6 @@ void sort_nodes(node* arr[], int n);
 void generate_codes(node* root, char* code, int depth);
 void generate_huffman(node* sym_nodes, int sym_count);
 float display_huffman_stats(node* sym_nodes, int sym_count);
+float calc_huffman_efficiency(float huffman_len, float entropy);
 
 #endif

@@ -18,15 +18,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int sym_num = 0;
+float sym_prob_sum = 0;
+char encoding_string[256];
+
 int main(int argc, char* argv[]) {
+    /* Ensuring Command has been run properly */
     if (argc != 1) {
         printf("Incorrect usage. This executable takes in no arguuments.\nExiting ... \n");
         return -1;
     }
 
-    int sym_num = 0;
-
-    // Querying the Numer of Symbols from the User
+    /* Taking User inputs for symbols and probabilities */
     printf("Please enter the number of symbols: ");
     scanf("%d", &sym_num);
     if (sym_num < 2) {
@@ -36,11 +39,10 @@ int main(int argc, char* argv[]) {
     float sym_prob[sym_num];
     char sym_char[sym_num];
     node sym_nodes[sym_num];
-    float sym_prob_sum = 0;
 
     printf("Please enter the probabilities for the %d symbols: \n", sym_num);
     for (int i = 0; i < sym_num; i++) {
-        printf("Enter probability and character for symbol p_%d: ", i);
+        printf("\tEnter probability and character for symbol p_%d: ", i);
         if (scanf(" %c:%f", &sym_char[i], &sym_prob[i]) != 2) {
             printf("Invalid input format. Use: A:0.25\nExiting...\n");
             return -1;
@@ -52,18 +54,25 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Assigning all of the probabilities and symbols into nodes
     for (int i = 0; i < sym_num; i++) {
         sym_nodes[i].id = i;
         sym_nodes[i].symbol = sym_char[i];
-        sym_nodes[i].data = sym_prob[i];
+        sym_nodes[i].prob = sym_prob[i];
         sym_nodes[i].left = NULL;
         sym_nodes[i].right = NULL;
     }
 
+    /*Entropy Calculation */
+    float entropy = calculate_entropy(sym_nodes, sym_num);
+
+    /* Performing Huffman Encoding and Printing the Results */
     generate_huffman(sym_nodes, sym_num);
     float huffman_avg_len = display_huffman_stats(sym_nodes, sym_num);
+    printf("Entropy for these symbols is  = %f\n", entropy);
     printf("Average Huffman Code Length = %f\n", huffman_avg_len);
 
+    /* Coding Efficiency */
+    float huffman_effic = calc_huffman_efficiency(huffman_avg_len, entropy);
+    printf("Huffman Coding Efficiency is = %f%\n", huffman_effic * 100.0);
     return 0;
 }

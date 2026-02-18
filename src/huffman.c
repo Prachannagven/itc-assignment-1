@@ -6,7 +6,7 @@
 void sort_nodes(node* arr[], int n) {
     for (int i = 0; i < n - 1; i++) {
         for (int j = 0; j < n - 1 - i; j++) {
-            if (arr[j]->data > arr[j + 1]->data) {
+            if (arr[j]->prob > arr[j + 1]->prob) {
                 node* temp = arr[j];
                 arr[j] = arr[j + 1];
                 arr[j + 1] = temp;
@@ -45,7 +45,7 @@ void generate_huffman(node* sym_nodes, int sym_count) {
     }
     int active_count = sym_count;
 
-    // Step 3 - Constantly sorting through and adding the nodes with the lowest data values until
+    // Step 3 - Constantly sorting through and adding the nodes with the lowest prob values until
     // the tree reaches one node
     while (active_count > 1) {
         sort_nodes(active_nodes, active_count);
@@ -55,7 +55,7 @@ void generate_huffman(node* sym_nodes, int sym_count) {
 
         node* parent = malloc(sizeof(node));
         parent->id = -1;
-        parent->data = left->data + right->data;
+        parent->prob = left->prob + right->prob;
         parent->right = right;
         parent->left = left;
 
@@ -82,8 +82,12 @@ float display_huffman_stats(node* sym_nodes, int sym_count) {
     for (int i = 0; i < sym_count; i++) {
         printf("%c      | %s    | %d\n", sym_nodes[i].symbol, sym_nodes[i].code,
                sym_nodes[i].code_len);
-        huffman_avg_len += sym_nodes[i].code_len;
+        huffman_avg_len += sym_nodes[i].prob * sym_nodes[i].code_len;
     }
-    huffman_avg_len = huffman_avg_len / sym_count;
     return huffman_avg_len;
+}
+
+float calc_huffman_efficiency(float huffman_len, float entropy) {
+    float huffman_effic = (entropy / huffman_len);
+    return huffman_effic;
 }

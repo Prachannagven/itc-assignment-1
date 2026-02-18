@@ -7,7 +7,7 @@
 typedef struct node {
     // Node Properties
     int id;
-    float data;
+    float prob;
     char symbol;
     // Tree Creation Properties
     struct node* left;
@@ -18,5 +18,6 @@ typedef struct node {
 } node;
 
 void free_tree(node* root);
+float calculate_entropy(node* sym_nodes, int sym_count);
 
 #endif
