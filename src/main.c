@@ -12,67 +12,136 @@
  * * v0.1 - 17/02/2026 - First version. Performs symbol blind huffman encoding using a binary tree
  * * v0.2 - Takes a symbol in and then performs huffman encoding. Added in entropy and avg. length
  * calculation of huffman
+ * * v0.3 - Takes a string as an input directly, and does string parsing to set up the nodes.
+ * * v1.0 - Implements shanon and shanon fano type code
  */
+#include "fano.h"
 #include "global_req.h"
 #include "huffman.h"
+#include "shannon.h"
+#include "shannon_type.h"
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
+
+#define MAX_STRING_SIZE 10000
 
 int sym_num = 0;
-float sym_prob_sum = 0;
-char encoding_string[256];
 
 int main(int argc, char* argv[]) {
     /* Ensuring Command has been run properly */
-    if (argc != 1) {
-        printf("Incorrect usage. This executable takes in no arguuments.\nExiting ... \n");
+    if (argc == 1) {
+        printf("You have not added an additional file. You will be prompted to enter a string\n");
+    } else if (argc > 2) {
+        printf("Invalid usage. You may either run the program, or attach a file to be encoded.\n");
         return -1;
     }
 
-    /* Taking User inputs for symbols and probabilities */
-    printf("Please enter the number of symbols: ");
-    scanf("%d", &sym_num);
-    if (sym_num < 2) {
-        printf("More than 1 symbol is required to make codes. \nExiting...\n");
-        return -1;
+    /* Taking a string input from the user */
+    char input_str[MAX_STRING_SIZE];
+    int str_len = 0;
+    if (argc == 1) {
+        printf("Please enter a string to encode (max 255 chars): ");
+        fgets(input_str, sizeof(input_str), stdin);
+        input_str[strcspn(input_str, "\n")] = '\0';
+        str_len = strlen(input_str);
+
+        if (str_len < 2) {
+            printf("String must be at least 2 characters long.\nExiting...\n");
+            return -1;
+        }
+    } else if (argc == 2) {
+        FILE* fp = fopen(argv[1], "r");
+        if (fp == NULL) {
+            printf("Could not open file: %s\nExiting...\n", argv[1]);
+            return -1;
+        }
+        int c;
+        while (str_len < (int)(sizeof(input_str) - 1) && (c = fgetc(fp)) != EOF) {
+            input_str[str_len++] = (char)c;
+        }
+        fclose(fp);
+        input_str[str_len] = '\0';
+        if (str_len < 2) {
+            printf("File string must be at least 2 characters long.\nExiting...\n");
+            return -1;
+        }
     }
-    float sym_prob[sym_num];
-    char sym_char[sym_num];
+
+    /* Computing symbol frequencies and probabilities from the string */
+    int freq[256] = {0};
+    for (int i = 0; i < str_len; i++) {
+        freq[(unsigned char)input_str[i]]++;
+    }
+
+    // Count unique symbols
+    sym_num = 0;
+    for (int i = 0; i < 256; i++) {
+        if (freq[i] > 0) {
+            sym_num++;
+        }
+    }
+
+    // Assigning the symbols into nodes
     node sym_nodes[sym_num];
-
-    printf("Please enter the probabilities for the %d symbols: \n", sym_num);
-    for (int i = 0; i < sym_num; i++) {
-        printf("\tEnter probability and character for symbol p_%d: ", i);
-        if (scanf(" %c:%f", &sym_char[i], &sym_prob[i]) != 2) {
-            printf("Invalid input format. Use: A:0.25\nExiting...\n");
-            return -1;
-        }
-        sym_prob_sum += sym_prob[i];
-        if (sym_prob_sum > 1) {
-            printf("Net probability has exceeded 1. Something is wrong. \nExtiing...\n");
-            return -1;
+    int idx = 0;
+    for (int i = 0; i < 256; i++) {
+        if (freq[i] > 0) {
+            sym_nodes[idx].id = idx;
+            sym_nodes[idx].symbol = (char)i;
+            sym_nodes[idx].prob = (float)freq[i] / str_len;
+            sym_nodes[idx].left = NULL;
+            sym_nodes[idx].right = NULL;
+            idx++;
         }
     }
 
-    for (int i = 0; i < sym_num; i++) {
-        sym_nodes[i].id = i;
-        sym_nodes[i].symbol = sym_char[i];
-        sym_nodes[i].prob = sym_prob[i];
-        sym_nodes[i].left = NULL;
-        sym_nodes[i].right = NULL;
-    }
-
-    /*Entropy Calculation */
+    /* Entropy Calculation */
     float entropy = calculate_entropy(sym_nodes, sym_num);
+    printf("\nEntropy H = %f bits/symbol\n", entropy);
 
-    /* Performing Huffman Encoding and Printing the Results */
+    /* Huffman Encoding */
+    // Encoding and Displaying the Symbols
+    printf("\n=== Huffman Code ===\n");
     generate_huffman(sym_nodes, sym_num);
     float huffman_avg_len = display_huffman_stats(sym_nodes, sym_num);
-    printf("Entropy for these symbols is  = %f\n", entropy);
-    printf("Average Huffman Code Length = %f\n", huffman_avg_len);
+    printf("Average Length = %f | Efficiency = %.2f%%\n", huffman_avg_len,
+           calc_huffman_efficiency(huffman_avg_len, entropy) * 100.0f);
 
-    /* Coding Efficiency */
-    float huffman_effic = calc_huffman_efficiency(huffman_avg_len, entropy);
-    printf("Huffman Coding Efficiency is = %f%\n", huffman_effic * 100.0);
+    // Generating and printing the bitstream
+    char huffman_bitstream[str_len * 100];
+    gen_huffman_bitstream(huffman_bitstream, input_str, str_len, sym_num, sym_nodes);
+    printf("Huffman bitstream:\n%s", huffman_bitstream);
+    decode_huffman_bitstream(huffman_bitstream, sym_num, sym_nodes);
+
+    /* Shanon-Type Coding */
+    printf("\n=== Shannon-Type Code ===\n");
+    generate_shannon_type(sym_nodes, sym_num);
+    float st_avg_len = display_shannon_type_stats(sym_nodes, sym_num);
+    printf("Average Length = %f | Efficiency = %.2f%%\n", st_avg_len,
+           (entropy / st_avg_len) * 100.0f);
+
+    /* Shanon Coding */
+    printf("\n=== Shannon Code ===\n");
+    generate_shannon(sym_nodes, sym_num);
+    float sh_avg_len = display_shannon_stats(sym_nodes, sym_num);
+    printf("Average Length = %f | Efficiency = %.2f%%\n", sh_avg_len,
+           (entropy / sh_avg_len) * 100.0f);
+
+    /* Shanon-Fano Coding */
+    printf("\n=== Shannon-Fano Code ===\n");
+    generate_fano(sym_nodes, sym_num);
+    float fano_avg_len = display_fano_stats(sym_nodes, sym_num);
+    printf("Average Length = %f | Efficiency = %.2f%%\n", fano_avg_len,
+           (entropy / fano_avg_len) * 100.0f);
+
+    /* --- Comparison Table --- */
+    printf("\n=== Comparison Summary ===\n");
+    printf("%-20s | %s\n", "Coding Scheme", "Avg Length");
+    printf("%-20s | %f\n", "Entropy Bound", entropy);
+    printf("%-20s | %f\n", "Huffman", huffman_avg_len);
+    printf("%-20s | %f\n", "Shannon-Type", st_avg_len);
+    printf("%-20s | %f\n", "Shannon", sh_avg_len);
+    printf("%-20s | %f\n", "Shannon-Fano", fano_avg_len);
+
     return 0;
 }

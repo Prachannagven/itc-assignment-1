@@ -10,5 +10,8 @@ void generate_codes(node* root, char* code, int depth);
 void generate_huffman(node* sym_nodes, int sym_count);
 float display_huffman_stats(node* sym_nodes, int sym_count);
 float calc_huffman_efficiency(float huffman_len, float entropy);
+void gen_huffman_bitstream(char* huffman_bitstream, char* input_str, int str_len, int sym_num,
+                           node* sym_nodes);
+void decode_huffman_bitstream(char* huffman_bitstream, int sym_num, node* sym_nodes);
 
 #endif

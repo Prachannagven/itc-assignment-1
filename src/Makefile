@@ -1,6 +1,6 @@
 TOP = main.c
 EXEC = itc
-AUX = huffman.c global_req.c
+AUX = huffman.c global_req.c shannon_type.c shannon.c fano.c
 FLAGS = -Wall -Wextra -g
 LINKERS = -lm
 

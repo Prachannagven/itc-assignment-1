@@ -78,10 +78,10 @@ void generate_huffman(node* sym_nodes, int sym_count) {
 
 float display_huffman_stats(node* sym_nodes, int sym_count) {
     float huffman_avg_len = 0;
-    printf("Symbol | Huffman Code | Length\n");
+    printf("Symbol | Probability | Huffman Code | Length\n");
     for (int i = 0; i < sym_count; i++) {
-        printf("%c      | %s    | %d\n", sym_nodes[i].symbol, sym_nodes[i].code,
-               sym_nodes[i].code_len);
+        printf("%c      | %f    | %s    | %d\n", sym_nodes[i].symbol, sym_nodes[i].prob,
+               sym_nodes[i].code, sym_nodes[i].code_len);
         huffman_avg_len += sym_nodes[i].prob * sym_nodes[i].code_len;
     }
     return huffman_avg_len;
@@ -90,4 +90,43 @@ float display_huffman_stats(node* sym_nodes, int sym_count) {
 float calc_huffman_efficiency(float huffman_len, float entropy) {
     float huffman_effic = (entropy / huffman_len);
     return huffman_effic;
+}
+
+void gen_huffman_bitstream(char* huffman_bitstream, char* input_str, int str_len, int sym_num,
+                           node* sym_nodes) {
+    int idx = 0;
+    for (int i = 0; i < str_len; i++) {
+        for (int j = 0; j < sym_num; j++) {
+            if (input_str[i] == sym_nodes[j].symbol) {
+                for (int k = 0; k < sym_nodes[j].code_len; k++) {
+                    huffman_bitstream[idx] = sym_nodes[j].code[k];
+                    idx++;
+                }
+            }
+        }
+    }
+    huffman_bitstream[idx] = '\n';
+    huffman_bitstream[idx + 1] = '\0';
+}
+
+void decode_huffman_bitstream(char* huffman_bitstream, int sym_num, node* sym_nodes) {
+    printf("Decoded string: ");
+    int i = 0;
+    while (huffman_bitstream[i] != '\0' && huffman_bitstream[i] != '\n') {
+        for (int j = 0; j < sym_num; j++) {
+            int match = 1;
+            for (int k = 0; k < sym_nodes[j].code_len; k++) {
+                if (huffman_bitstream[i + k] != sym_nodes[j].code[k]) {
+                    match = 0;
+                    break;
+                }
+            }
+            if (match) {
+                printf("%c", sym_nodes[j].symbol);
+                i += sym_nodes[j].code_len;
+                break;
+            }
+        }
+    }
+    printf("\n");
 }
