@@ -1,13 +1,107 @@
 \documentclass{AnantDocumentation}
 
+\backgroundsetup{
+	contents=""
+}
+
+\lstset{
+	backgroundcolor=\color{white},
+	basicstyle=\ttfamily\small,
+	breaklines=true,
+	frame=single,
+	numbers=left,
+	numberstyle=\tiny,
+	keywordstyle=\color{blue},
+	commentstyle=\color{gray},
+	stringstyle=\color{red},
+	showstringspaces=false
+}
+
 \title{ECE F344: Information Theory and Coding \\ Assignment 1}
 \author{Pranav Chandra N. V. \\ 2023AAPS0013P}
 
 \begin{document}
 \maketitle
 \tableofcontents
-Hello world!
 
+\section{Introduction}
+The goals of this assignment, as per the brief, are listed below:
+\begin{itemize}
+	\item Implement Huffman Encoding and Decoding
+	\item Implement Shanon Type Encoding
+	\item Implement Shannon Encoding
+	\item Implement Shannon-Fano Encoding
+	\item Implement Ternary (or higher) based Huffman Encoding
+	\item Provide a comparitive statement between the different encoding efficiencies
+\end{itemize}
+The above goals were stated as the minimum required targets. All set targets were achieved, and passed. The submission is able to perform the following:
+\begin{itemize}
+	\item Be able to handle both text streams via stdin and .txt files.
+	\item Huffman encoding and decoding.
+	\item Huffman encoding in D-ary type, with $2 \le D \le 9$.
+	\item Shanon Type encoding and decoding.
+	\item Shanon encoding and decoding.
+	\item Shannon-Fano encoding and decoding.
+\end{itemize}
+
+\section{Methodology}
+While implementing these algorithms on paper is generally easy, in code it became slightly harder. My selected language was C. The first aspect of implementation involved generating binary (and later on D-ary) trees that could store the incoming symbols for further processing.
+A lot of these methods involve adding togehter lower ranked nodes into higher one, and the best way to keep track of these additions was through the use of trees. The structure of the comprising nodes for the tree is below:
+
+\begin{lstlisting}[language=C]
+typedef struct node {
+    // Node Properties
+    int id;
+    float prob;
+    char symbol;
+    // Tree Creation Properties (generalised to D-ary)
+    struct node* children[MAX_D];
+    int child_count;  // number of children (0 for leaf nodes)
+    // Huffman Code Values
+    char code[100];
+    int code_len;
+    // Shannon-Type Code Values
+    char st_code[100];
+    int st_code_len;
+    // Shannon Code Values
+    char sh_code[100];
+    int sh_code_len;
+    // Fano Code Values
+    char fano_code[100];
+    int fano_code_len;
+} node;
+\end{lstlisting}
+
+The node contained variables for id, probability and the symbol it represented.
+Further, to act as a part of the tree, it required child nodes.
+In this case, to allow for D-ary coding, an array of pointers of size \lstinline[language=C]{MAX_D} was used.
+
+Below this, the huffman code values, shannon-type code values, shannon code values and fano code values were stored within the node in order to ensure that all the data was portable and always together, preventing data handling exceptions.
+
+The primary flow of the code is as follows:
+\begin{enumerate}
+	\item Executable is run (with/without argument).
+	\item If no argument is passed, the user is prompted for a string.
+	\item Once input data is entered, the text is broken down into symbols.
+	\item The probability of each unique symbol is computed.
+	\item The symbol as well as it's associated probability is stored into the node struct.
+	\item The nodes are assembled into a D-ary tree, and then traversed appropriately to generate the various codes.
+	\item The codes are stored back to the nodes at all points, to ensure that data loss doesn't occur.
+	\item The bitstreams of each type of encoding method are genearted and then printed out.
+	\item The bitstream is passed into a "decode" function along with the base nodes containing the original symbols.
+	\item The bitstream undergoes decoding. As all codes are "prefix-free", we don't have the issue of code ambiguity, and the bitstream is decoded to characters.
+	\item The decoded bitstream is printed out.
+	\item The average coding length is calculated using $L_{avg} = \sum_X L_X\log_D(P(X))$ for each type. Where $P(X)$ corresponds to the probability of character occurance, $L_X$ corresponds to the number of bits required to encode that symbol.
+	\item The entropy bound of the message of the message is calculated, using $L_{avg} = \sum_X P(X)\log_D(P(X))$.
+	\item A comparison table is displayed to the user.
+\end{enumerate}
+
+\section{Operation}
+The code utilizes no external libraries, save for the standard C libraries like \lstinline[language=C]{stdio.h, string.h, stdlib.h, math.h}.
+
+A simple Makefile has been set up. You may run \lstinline{make} in your terminal to compile the script with the relevant flags. From there, the \lstinline{itc} executable will appear.
+Run the executable, either by itself or passing a .txt file as an argument.
+If no file is passed as an argument, you will be prompted to enter a string. The output will then be printed directly to stdout.
 
 \end{document}
 
