@@ -6,10 +6,12 @@ void free_tree(node* root) {
     if (root == NULL)
         return;
 
-    free_tree(root->left);
-    free_tree(root->right);
+    // Recurse over all children (works for binary and D-ary trees)
+    for (int i = 0; i < root->child_count; i++) {
+        free_tree(root->children[i]);
+    }
 
-    // Only free nodes that were dynamically allocated
+    // Only free nodes that were dynamically allocated (internal nodes have id == -1)
     if (root->id == -1)
         free(root);
 }

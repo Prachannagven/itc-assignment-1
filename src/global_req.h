@@ -4,14 +4,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MAX_D 16  // maximum supported D-ary arity
+
 typedef struct node {
     // Node Properties
     int id;
     float prob;
     char symbol;
-    // Tree Creation Properties
-    struct node* left;
-    struct node* right;
+    // Tree Creation Properties (generalised to D-ary)
+    struct node* children[MAX_D];
+    int child_count;  // number of children (0 for leaf nodes)
     // Huffman Code Values
     char code[100];
     int code_len;

@@ -15,65 +15,69 @@ void sort_nodes(node* arr[], int n) {
     }
 }
 
-void generate_codes(node* root, char* code, int depth) {
-    if (root->left == NULL && root->right == NULL) {
+void generate_codes(node* root, char* code, int depth, int D) {
+    if (root->child_count == 0) {
+        // Leaf node: assign code only for main symbols (internal nodes have -1 and dumies have -2)
         code[depth] = '\0';
-        // printf("Symbol %d -> %s \n", root->id, code);
-        strcpy(root->code, code);
-        root->code_len = depth;
+        if (root->id >= 0) {
+            strcpy(root->code, code);
+            root->code_len = depth;
+        }
         return;
     }
-
-    if (root->left) {
-        code[depth] = '0';
-        generate_codes(root->left, code, depth + 1);
-    }
-
-    if (root->right) {
-        code[depth] = '1';
-        generate_codes(root->right, code, depth + 1);
+    for (int i = 0; i < D; i++) {
+        if (root->children[i]) {
+            code[depth] = (char)('0' + i);
+            generate_codes(root->children[i], code, depth + 1, D);
+        }
     }
 }
 
-void generate_huffman(node* sym_nodes, int sym_count) {
-    node* active_nodes[sym_count];
-    node* root;
+void generate_huffman(node* sym_nodes, int sym_count, int D) {
+    int remainder = (sym_count - 1) % (D - 1);
+    int dummies   = (remainder == 0) ? 0 : (D - 1 - remainder);
+    int total     = sym_count + dummies;
 
-    // Step 2 - Creating a set of nodes to play around with while making the tree
-    for (int i = 0; i < sym_count; i++) {
-        active_nodes[i] = &sym_nodes[i];
+    node dummy_store[D - 1];
+    for (int i = 0; i < dummies; i++) {
+        dummy_store[i].id          = -2;   // marker: dummy
+        dummy_store[i].prob        = 0.0f;
+        dummy_store[i].symbol      = 0;
+        dummy_store[i].child_count = 0;
+        dummy_store[i].code[0]     = '\0';
+        dummy_store[i].code_len    = 0;
     }
-    int active_count = sym_count;
 
-    // Step 3 - Constantly sorting through and adding the nodes with the lowest prob values until
-    // the tree reaches one node
+    node* active[total];
+    for (int i = 0; i < dummies; i++)
+        active[i] = &dummy_store[i];
+    for (int i = 0; i < sym_count; i++)
+        active[dummies + i] = &sym_nodes[i];
+    int active_count = total;
+
     while (active_count > 1) {
-        sort_nodes(active_nodes, active_count);
-
-        node* left = active_nodes[0];
-        node* right = active_nodes[1];
+        sort_nodes(active, active_count);
 
         node* parent = malloc(sizeof(node));
-        parent->id = -1;
-        parent->prob = left->prob + right->prob;
-        parent->right = right;
-        parent->left = left;
+        parent->id          = -1;
+        parent->prob        = 0.0f;
+        parent->child_count = D;
 
-        for (int i = 2; i < active_count; i++) {
-            active_nodes[i - 2] = active_nodes[i];
+        for (int i = 0; i < D; i++) {
+            parent->children[i]  = active[i];
+            parent->prob        += active[i]->prob;
         }
 
-        active_count -= 2; // removed 2 nodes
-        active_nodes[active_count] = parent;
-        active_count++; // added 1 node
+        int remaining = active_count - D;
+        for (int i = 0; i < remaining; i++)
+            active[i] = active[D + i];
+        active[remaining] = parent;
+        active_count      = remaining + 1;
     }
 
-    root = active_nodes[0];
-
-    char code_buf[100];
-    generate_codes(root, code_buf, 0);
-
-    free_tree(root);
+    char code_buf[200];
+    generate_codes(active[0], code_buf, 0, D);
+    free_tree(active[0]);
 }
 
 float display_huffman_stats(node* sym_nodes, int sym_count) {

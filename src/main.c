@@ -10,13 +10,16 @@
  * Version: v0.2
  * Version History:
  * * v0.1 - 17/02/2026 - First version. Performs symbol blind huffman encoding using a binary tree
- * * v0.2 - Takes a symbol in and then performs huffman encoding. Added in entropy and avg. length
- * calculation of huffman
- * * v0.3 - Takes a string as an input directly, and does string parsing to set up the nodes.
- * * v1.0 - Implements shanon and shanon fano type code
- * * v1.1 - Generates the bitstream of the different types of code and fixed up the additional code
- * files. Also had to fix the makefile.
- * * v1.2 - Minor fixes with regards to printing of encoded values.
+ * * v0.2 - 18/02/2026 - Takes a symbol in and then performs huffman encoding. Added in entropy and
+ * avg. length calculation of huffman
+ * * v0.3 - 18/02/2026 - Takes a string as an input directly, and does string parsing to set up the
+ * nodes.
+ * * v1.0 - 18/02/2026 - Implements shanon and shanon fano type code
+ * * v1.1 - 18/02/2026 - Generates the bitstream of the different types of code and fixed up the
+ * additional code files. Also had to fix the makefile.
+ * * v1.2 - 18/02/2026 - Minor fixes with regards to printing of encoded values.
+ * * v1.3 - 19/02/2026 - Now can perform D-ary encoding for huffman. Default tree size is now
+ * expanded to allow it
  */
 #include "fano.h"
 #include "global_req.h"
@@ -92,8 +95,7 @@ int main(int argc, char* argv[]) {
             sym_nodes[idx].id = idx;
             sym_nodes[idx].symbol = (char)i;
             sym_nodes[idx].prob = (float)freq[i] / str_len;
-            sym_nodes[idx].left = NULL;
-            sym_nodes[idx].right = NULL;
+            sym_nodes[idx].child_count = 0; // leaf node: no children
             idx++;
         }
     }
@@ -103,9 +105,22 @@ int main(int argc, char* argv[]) {
     printf("\nEntropy H = %f bits/symbol\n", entropy);
 
     /* Huffman Encoding */
+    // Ask for arity (D=2 gives standard binary Huffman)
+    int D = 2;
+    printf("\nEnter D for D-ary Huffman encoding (2 = binary, 3 = ternary, ...): ");
+    scanf("%d", &D);
+    if (D < 2) {
+        printf("D must be >= 2. Defaulting to binary (D=2).\n");
+        D = 2;
+    }
+    if (D > sym_num) {
+        printf("D (%d) > number of symbols (%d). Defaulting to binary (D=2).\n", D, sym_num);
+        D = 2;
+    }
+
     // Encoding and Displaying the Symbols
-    printf("\n=== Huffman Code ===\n");
-    generate_huffman(sym_nodes, sym_num);
+    printf("\n=== %d-ary Huffman Code ===\n", D);
+    generate_huffman(sym_nodes, sym_num, D);
     float huffman_avg_len = display_huffman_stats(sym_nodes, sym_num);
     printf("Average Length = %f | Efficiency = %.2f%%\n", huffman_avg_len,
            calc_huffman_efficiency(huffman_avg_len, entropy) * 100.0f);
