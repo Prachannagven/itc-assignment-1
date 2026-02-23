@@ -1,5 +1,8 @@
 \documentclass{AnantDocumentation}
 
+\usepackage[backend=biber,style=ieee]{biblatex}
+\addbibresource{./itc-assignment-1.bib}
+
 \backgroundsetup{
 	contents=""
 }
@@ -61,7 +64,7 @@ The above goals were stated as the minimum required targets. All set targets wer
 \section{Methodology}
 
 \subsection{Data Structures}
-While implementing these algorithms on paper is generally straightforward, implementation in C required careful management of data. The primary challenge was building and traversing trees while keeping all code values associated with their original symbols. The node structure used throughout is:
+While implementing these algorithms on paper is generally straightforward \cite{Geeks4Geeks_Huffman}, \cite{Geeks4Geeks_BinTree}, implementation in C required careful management of data. The primary challenge was building and traversing trees while keeping all code values associated with their original symbols. The node structure used throughout is:
 
 \begin{lstlisting}[language=C]
 typedef struct node {
@@ -262,6 +265,9 @@ As expected, Huffman coding achieves the closest average length to the entropy b
 \subsection{fano.c}
 \lstinputlisting[language=C]{../src/fano.c}
 \end{comment}
+
+\printbibliography
+
 
 
 \end{document}
