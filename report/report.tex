@@ -23,30 +23,45 @@
 \begin{document}
 \maketitle
 \tableofcontents
+\newpage
 
 \section{Introduction}
 The goals of this assignment, as per the brief, are listed below:
 \begin{itemize}
 	\item Implement Huffman Encoding and Decoding
-	\item Implement Shanon Type Encoding
+	\item Implement Shannon-Type Encoding
 	\item Implement Shannon Encoding
-	\item Implement Shannon-Fano Encoding
-	\item Implement Ternary (or higher) based Huffman Encoding
-	\item Provide a comparitive statement between the different encoding efficiencies
+	\item Implement Shannon-Fano (Fano) Encoding
+	\item Implement D-ary (non-binary) Huffman Encoding
+	\item Provide a comparative statement between the different encoding efficiencies
 \end{itemize}
-The above goals were stated as the minimum required targets. All set targets were achieved, and passed. The submission is able to perform the following:
+The above goals were stated as the minimum required targets. All set targets were achieved. The submission is able to perform the following:
 \begin{itemize}
-	\item Be able to handle both text streams via stdin and .txt files.
-	\item Huffman encoding and decoding.
-	\item Huffman encoding in D-ary type, with $2 \le D \le 9$.
-	\item Shanon Type encoding and decoding.
-	\item Shanon encoding and decoding.
+	\item Accept input either via stdin (prompted string) or as a \texttt{.txt} file argument.
+	\item Huffman encoding and decoding (binary and D-ary).
+	\item D-ary Huffman encoding with $2 \le D \le 9$.
+	\item Shannon-Type encoding and decoding.
+	\item Shannon encoding and decoding.
 	\item Shannon-Fano encoding and decoding.
+	\item Entropy calculation and a comparison table of all average code lengths.
+\end{itemize}
+
+\section{Assumptions}
+\begin{itemize}
+	\item Symbol probabilities are derived from character frequencies in the input string:
+	      $P(x_i) = \frac{\text{count}(x_i)}{N}$, where $N$ is the total number of characters.
+	\item All whitespace and punctuation characters in the input are treated as symbols.
+	\item For D-ary Huffman, if the number of symbols $n$ does not satisfy $(n-1) \bmod (D-1) = 0$,
+	      dummy symbols with probability 0 are silently appended to satisfy the condition.
+	\item All generated codes are prefix-free by construction, enabling unambiguous decoding.
+	\item Entropy and average code lengths are computed in bits (base-2 logarithm), regardless of D.
+	\item The input string is limited to 10\,000 characters.
 \end{itemize}
 
 \section{Methodology}
-While implementing these algorithms on paper is generally easy, in code it became slightly harder. My selected language was C. The first aspect of implementation involved generating binary (and later on D-ary) trees that could store the incoming symbols for further processing.
-A lot of these methods involve adding togehter lower ranked nodes into higher one, and the best way to keep track of these additions was through the use of trees. The structure of the comprising nodes for the tree is below:
+
+\subsection{Data Structures}
+While implementing these algorithms on paper is generally straightforward, implementation in C required careful management of data. The primary challenge was building and traversing trees while keeping all code values associated with their original symbols. The node structure used throughout is:
 
 \begin{lstlisting}[language=C]
 typedef struct node {
@@ -56,7 +71,7 @@ typedef struct node {
     char symbol;
     // Tree Creation Properties (generalised to D-ary)
     struct node* children[MAX_D];
-    int child_count;  // number of children (0 for leaf nodes)
+    int child_count;
     // Huffman Code Values
     char code[100];
     int code_len;
@@ -72,36 +87,182 @@ typedef struct node {
 } node;
 \end{lstlisting}
 
-The node contained variables for id, probability and the symbol it represented.
-Further, to act as a part of the tree, it required child nodes.
-In this case, to allow for D-ary coding, an array of pointers of size \lstinline[language=C]{MAX_D} was used.
+Each node stores the symbol, its probability, tree linkage (a D-ary array of child pointers), and the codes assigned by all four methods. This keeps all data portable and co-located.
 
-Below this, the huffman code values, shannon-type code values, shannon code values and fano code values were stored within the node in order to ensure that all the data was portable and always together, preventing data handling exceptions.
-
-The primary flow of the code is as follows:
+\subsection{Huffman Coding}
+Huffman coding constructs an optimal prefix-free code by greedily merging the $D$ least-probable symbols at each step:
 \begin{enumerate}
-	\item Executable is run (with/without argument).
+	\item Sort all symbols by probability (ascending).
+	\item Merge the $D$ lowest-probability nodes into one parent node whose probability is their sum.
+	\item Repeat until one root node remains.
+	\item Traverse the tree: assign digit $0, 1, \ldots, D{-}1$ to each branch, recording the path to each leaf as its codeword.
+\end{enumerate}
+For binary Huffman, $D=2$. For D-ary, dummy symbols with $p=0$ are added if needed so that $(n-1) \bmod (D-1) = 0$.
+
+\subsection{Shannon-Type Coding}
+Symbols are sorted by descending probability. The codeword length for symbol $x_i$ is assigned as:
+\[
+	l_i = \left\lceil \log_2 \frac{1}{P(x_i)} \right\rceil
+\]
+Actual codewords are then assigned canonically by incrementing a counter and left-shifting when the length increases, producing a valid prefix-free code.
+
+\subsection{Shannon Coding (Shannon-Fano-Elias)}
+Symbols are sorted by descending probability. The cumulative probability up to (but not including) symbol $i$ is:
+\[
+	F_i = \sum_{k=0}^{i-1} P(x_k)
+\]
+The codeword for $x_i$ is the first $l_i = \lceil \log_2(1/P(x_i)) \rceil$ bits of the binary expansion of $F_i$.
+
+\subsection{Shannon-Fano Coding}
+Symbols are sorted by descending probability. The list is recursively split into two groups whose total probabilities are as equal as possible. The top group receives a \texttt{0} prefix and the bottom group a \texttt{1} prefix at each level. This continues until each group contains a single symbol.
+
+\subsection{Entropy and Efficiency}
+The source entropy (in bits) is:
+\[
+	H = -\sum_{i} P(x_i) \log_2 P(x_i)
+\]
+The average codeword length for a given coding scheme is:
+\[
+	L_{\text{avg}} = \sum_{i} P(x_i) \cdot l_i
+\]
+Coding efficiency is defined as:
+\[
+	\eta = \frac{H}{L_{\text{avg}}} \times 100\%
+\]
+
+\subsection{Program Flow}
+\begin{enumerate}
+	\item Executable is run (with or without a \texttt{.txt} file argument).
 	\item If no argument is passed, the user is prompted for a string.
-	\item Once input data is entered, the text is broken down into symbols.
-	\item The probability of each unique symbol is computed.
-	\item The symbol as well as it's associated probability is stored into the node struct.
-	\item The nodes are assembled into a D-ary tree, and then traversed appropriately to generate the various codes.
-	\item The codes are stored back to the nodes at all points, to ensure that data loss doesn't occur.
-	\item The bitstreams of each type of encoding method are genearted and then printed out.
-	\item The bitstream is passed into a "decode" function along with the base nodes containing the original symbols.
-	\item The bitstream undergoes decoding. As all codes are "prefix-free", we don't have the issue of code ambiguity, and the bitstream is decoded to characters.
-	\item The decoded bitstream is printed out.
-	\item The average coding length is calculated using $L_{avg} = \sum_X L_X\log_D(P(X))$ for each type. Where $P(X)$ corresponds to the probability of character occurance, $L_X$ corresponds to the number of bits required to encode that symbol.
-	\item The entropy bound of the message of the message is calculated, using $L_{avg} = \sum_X P(X)\log_D(P(X))$.
-	\item A comparison table is displayed to the user.
+	\item The input is parsed into unique symbols; $P(x_i)$ is computed from character frequency.
+	\item The user selects $D$ for D-ary Huffman.
+	\item All four coding schemes generate their codewords and store them back into the nodes.
+	\item For each scheme, the bitstream for the full input string is generated and printed.
+	\item Each bitstream is decoded and the recovered string is printed.
+	\item A comparison table of average lengths and the entropy bound is displayed.
 \end{enumerate}
 
 \section{Operation}
-The code utilizes no external libraries, save for the standard C libraries like \lstinline[language=C]{stdio.h, string.h, stdlib.h, math.h}.
+The code utilizes no external libraries, save for the standard C libraries \lstinline[language=C]{stdio.h}, \lstinline[language=C]{string.h}, \lstinline[language=C]{stdlib.h}, and \lstinline[language=C]{math.h}.
 
-A simple Makefile has been set up. You may run \lstinline{make} in your terminal to compile the script with the relevant flags. From there, the \lstinline{itc} executable will appear.
-Run the executable, either by itself or passing a .txt file as an argument.
-If no file is passed as an argument, you will be prompted to enter a string. The output will then be printed directly to stdout.
+A \texttt{Makefile} is provided. Run \lstinline{make} in the \texttt{src/} directory to compile. The \texttt{itc} executable will be produced. Usage:
+\begin{itemize}
+	\item \texttt{./itc} --- prompts for a string via stdin.
+	\item \texttt{./itc input.txt} --- reads the contents of \texttt{input.txt}.
+\end{itemize}
+After entering the string, the user is prompted to select $D$ (the arity of the Huffman tree). All coding results and the comparison summary are printed to stdout.
+
+\newpage
+\section{Sample Output}
+The following output was produced using the input string \texttt{aaaabcdefg}, which corresponds to the 7-symbol example from the assignment brief with approximate probabilities $p_1=0.4$ and $p_2=\cdots=p_7=0.1$.
+
+\begin{lstlisting}
+Entropy H = 2.521928 bits/symbol
+
+=== 2-ary Huffman Code ===
+Symbol | Probability | Huffman Code | Length
+a      | 0.400000    | 11           | 2
+b      | 0.100000    | 000          | 3
+c      | 0.100000    | 001          | 3
+d      | 0.100000    | 010          | 3
+e      | 0.100000    | 011          | 3
+f      | 0.100000    | 100          | 3
+g      | 0.100000    | 101          | 3
+Average Length = 2.600000 | Efficiency = 97.00%
+Huffman bitstream:
+11111111000001010011100101
+Decoded string: aaaabcdefg
+
+=== Shannon-Type Code ===
+Symbol | Probability | Shannon-Type Code | Length
+a      | 0.400000    | 00                | 2
+b      | 0.100000    | 0100              | 4
+c      | 0.100000    | 0101              | 4
+d      | 0.100000    | 0110              | 4
+e      | 0.100000    | 0111              | 4
+f      | 0.100000    | 1000              | 4
+g      | 0.100000    | 1001              | 4
+Average Length = 3.200000 | Efficiency = 78.81%
+Shannon-Type bitstream:
+00000000010001010110011110001001
+Shannon-Type decoded: aaaabcdefg
+
+=== Shannon Code ===
+Symbol | Probability | Shannon Code | Length
+a      | 0.400000    | 00           | 2
+b      | 0.100000    | 0110         | 4
+c      | 0.100000    | 1000         | 4
+d      | 0.100000    | 1001         | 4
+e      | 0.100000    | 1011         | 4
+f      | 0.100000    | 1100         | 4
+g      | 0.100000    | 1110         | 4
+Average Length = 3.200000 | Efficiency = 78.81%
+Shannon bitstream:
+00000000011010001001101111001110
+Shannon decoded: aaaabcdefg
+
+=== Shannon-Fano Code ===
+Symbol | Probability | Shannon-Fano Code | Length
+a      | 0.400000    | 00                | 2
+b      | 0.100000    | 01                | 2
+c      | 0.100000    | 100               | 3
+d      | 0.100000    | 101               | 3
+e      | 0.100000    | 1100              | 4
+f      | 0.100000    | 1101              | 4
+g      | 0.100000    | 111               | 3
+Average Length = 2.700000 | Efficiency = 93.40%
+Fano bitstream:
+000000000110010111001101111
+Fano decoded: aaaabcdefg
+
+=== Comparison Summary ===
+Coding Scheme        | Avg Length
+Entropy Bound        | 2.521928
+Huffman              | 2.600000
+Shannon-Type         | 3.200000
+Shannon              | 3.200000
+Shannon-Fano         | 2.700000
+\end{lstlisting}
+
+As expected, Huffman coding achieves the closest average length to the entropy bound, followed by Shannon-Fano. Shannon and Shannon-Type both yield a longer average length for this input.
+
+\begin{comment}
+\section{Source Code}
+
+\subsection{global\_req.h}
+\lstinputlisting[language=C]{../src/global_req.h}
+
+\subsection{global\_req.c}
+\lstinputlisting[language=C]{../src/global_req.c}
+
+\subsection{main.c}
+\lstinputlisting[language=C]{../src/main.c}
+
+\subsection{huffman.h}
+\lstinputlisting[language=C]{../src/huffman.h}
+
+\subsection{huffman.c}
+\lstinputlisting[language=C]{../src/huffman.c}
+
+\subsection{shannon\_type.h}
+\lstinputlisting[language=C]{../src/shannon_type.h}
+
+\subsection{shannon\_type.c}
+\lstinputlisting[language=C]{../src/shannon_type.c}
+
+\subsection{shannon.h}
+\lstinputlisting[language=C]{../src/shannon.h}
+
+\subsection{shannon.c}
+\lstinputlisting[language=C]{../src/shannon.c}
+
+\subsection{fano.h}
+\lstinputlisting[language=C]{../src/fano.h}
+
+\subsection{fano.c}
+\lstinputlisting[language=C]{../src/fano.c}
+\end{comment}
+
 
 \end{document}
 

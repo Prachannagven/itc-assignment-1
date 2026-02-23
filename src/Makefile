@@ -10,3 +10,4 @@ $(EXEC): $(TOP) $(AUX)
 clean:
 	rm -f $(EXEC) *.o
 
+.PHONY: $(EXEC) clean
